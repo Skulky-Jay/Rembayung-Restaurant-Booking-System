@@ -16,15 +16,15 @@ bool is_duplicate(const vector<Booking>& bookings, const Booking& new_booking) {
         if (booking.phone == new_booking.phone && 
             booking.date == new_booking.date && 
             booking.time == new_booking.time) {
-            return true;
+            return true; // Duplicate booking found
         }
     }
-    return false;
+    return false; // No duplicate booking found
 }
 
 int search_booking(const vector<Booking>& bookings, const string& phone, const string& date, const string& time) {
     for (int i = 0; i < bookings.size(); i++){
-        if bookings[i].id == booking_id {
+        if (bookings[i].id == booking_id) {
             return i;
         }
     }
