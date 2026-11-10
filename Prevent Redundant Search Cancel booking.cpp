@@ -8,6 +8,9 @@ struct Booking {
     string phone;
     string date;
     string time;
+    string id;
+    string name;
+    int seats;
 };
 
 
@@ -24,7 +27,9 @@ bool is_duplicate(const vector<Booking>& bookings, const Booking& new_booking) {
 
 int search_booking(const vector<Booking>& bookings, const string& phone, const string& date, const string& time) {
     for (int i = 0; i < bookings.size(); i++){
-        if (bookings[i].id == booking_id) {
+        if (bookings[i].phone == phone &&
+            bookings[i].date == date &&
+            bookings[i].time == time) {
             return i;
         }
     }
