@@ -1,6 +1,3 @@
-// Rembayung Booking System - Steps 1-3 + Anti-Scalper
-// Submit Booking Request, Process Booking (FCFS), Prevent Redundant Booking,
-// Anti-Scalper check (esther.cpp)
 #include <iostream>
 #include <queue>
 #include <unordered_set>
@@ -96,10 +93,89 @@ bool antiScalperCheck(const string& customerId) {
     return true;
 }
 
-// Forward declarations (defined below)
+// Forward declarations
 bool is_duplicate(const vector<Booking>& bookings, const Booking& new_booking);
-int search_booking(const vector<Booking>& bookings, const string& phone, const string& date, const string& time);
+int search_booking(const vector<Booking>& bookings, int bookingId);
 bool cancel_booking(vector<Booking>& bookings, int booking_id);
+
+// Returns true if every character in the text is a digit (0-9)
+bool onlyDigits(const string& text) {
+    for (int i = 0; i < text.size(); i++) {
+        if (text[i] < '0' || text[i] > '9') {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Date validation DD/MM/YYYY
+bool isValidDate(const string& date) {
+    // Step 1: the text must be exactly 10 characters long
+    if (date.size() != 10) {
+        return false;
+    }
+
+    // Step 2: the 3rd and 6th characters must be '/'
+    if (date[2] != '/' || date[5] != '/') {
+        return false;
+    }
+
+    // Step 3: the day, month and year parts must be numbers
+    string dayText = date.substr(0, 2);     // first 2 characters
+    string monthText = date.substr(3, 2);   // characters 4-5
+    string yearText = date.substr(6, 4);    // last 4 characters
+    if (!onlyDigits(dayText) || !onlyDigits(monthText) || !onlyDigits(yearText)) {
+        return false;
+    }
+
+    // Step 4: the numbers must be in a sensible range
+    int day = stoi(dayText);
+    int month = stoi(monthText);
+    int year = stoi(yearText);
+    if (day < 1 || day > 31) {
+        return false;
+    }
+    if (month < 1 || month > 12) {
+        return false;
+    }
+    if (year < 2000) {
+        return false;
+    }
+
+    return true;   // passed every check
+}
+
+// Time validation HH:MM 
+bool isValidTime(const string& time) {
+    // Step 1: the text must be exactly 5 characters long
+    if (time.size() != 5) {
+        return false;
+    }
+
+    // Step 2: the 3rd character must be ':'
+    if (time[2] != ':') {
+        return false;
+    }
+
+    // Step 3: the hour and minute parts must be numbers
+    string hourText = time.substr(0, 2);     // first 2 characters
+    string minuteText = time.substr(3, 2);   // last 2 characters
+    if (!onlyDigits(hourText) || !onlyDigits(minuteText)) {
+        return false;
+    }
+
+    // Step 4: the numbers must be in a sensible range
+    int hour = stoi(hourText);
+    int minute = stoi(minuteText);
+    if (hour < 0 || hour > 23) {
+        return false;
+    }
+    if (minute < 0 || minute > 59) {
+        return false;
+    }
+
+    return true;   // passed every check
+}
 
 // 1. Submit Booking Request - O(1) average
 void submitBooking() {
@@ -115,8 +191,16 @@ void submitBooking() {
     getline(cin, booking.phone);
     cout << "Date (DD/MM/YYYY): ";
     getline(cin, booking.date);
+    if (!isValidDate(booking.date)) {
+        cout << "Rejected: invalid date, use DD/MM/YYYY.\n";
+        return;
+    }
     cout << "Time (HH:MM): ";
     getline(cin, booking.time);
+    if (!isValidTime(booking.time)) {
+        cout << "Rejected: invalid time, use 24-hour HH:MM.\n";
+        return;
+    }
     cout << "Seats requested: ";
     if (!(cin >> booking.seats)) {                       // non-numeric input
         cin.clear();
@@ -133,12 +217,7 @@ void submitBooking() {
         cout << "Rejected: a booking with this phone, date and time already exists.\n";
         return;
     }
-    // 3. Duplicate check: insert().second is false if ID already exists
-    if (!activeCustomers.insert(booking.customerId).second) {
-        cout << "Rejected: customer " << booking.customerId
-             << " already has an active request or reservation.\n";
-        return;
-    }
+
     booking.bookingId = nextBookingId++;                 // assigned only once accepted
     waitingQueue.push(booking);                          // goes to the back = FCFS
     cout << "Request received. Booking ID: " << booking.bookingId
@@ -180,19 +259,18 @@ bool is_duplicate(const vector<Booking>& bookings, const Booking& new_booking) {
     return false; // No duplicate booking found
 }
 
-int search_booking(const vector<Booking>& bookings, const string& phone, const int bookingId) {
+int search_booking(const vector<Booking>& bookings, int bookingId) {
     for (int i = 0; i < bookings.size(); i++){
-        if (bookings[i].phone == phone &&
-            bookings[i].bookingId == bookingId) {
+        if (bookings[i].bookingId == bookingId) {
             return i;
         }
     }
     return -1; // Booking not found
 }
 
-bool cancel_booking(vector<Booking>& bookings, int booking_id) {
+bool cancel_booking(vector<Booking>& bookings, int bookingId) {
     for (int i = 0; i < bookings.size(); i++) {
-        if (bookings[i].bookingId == booking_id) {
+        if (bookings[i].bookingId == bookingId) {
             confirmedSeats -= bookings[i].seats;
             activeCustomers.erase(bookings[i].customerId);
             bookings.erase(bookings.begin() + i);
@@ -237,6 +315,9 @@ void viewConfirmedReservations(const vector<Booking>& confirmedBookings) {
         cout << "\nBooking ID: " << currentBooking.bookingId;
         cout << "\nCustomer ID: " << currentBooking.customerId;
         cout << "\nCustomer Name: " << currentBooking.name;
+        cout << "\nPhone: " << currentBooking.phone;
+        cout << "\nDate: " << currentBooking.date;
+        cout << "\nTime: " << currentBooking.time;
         cout << "\nSeats Reserved: " << currentBooking.seats;
         cout << "\n----------------------------\n";
     }
@@ -251,9 +332,26 @@ void viewAvailableSeats() {
          << "Seats available: " << MAX_SEATS - confirmedSeats << "\n";
 }
 
+//Test Data
+void pushTestBookings() {
+    Booking tests[] = {
+        {0, "C001", "Ahmad Faiz",    "012-3456789", "20/12/2026", "19:00", 4},
+        {0, "C002", "Siti Aminah",   "013-9876543", "21/12/2026", "20:30", 10},
+        {0, "C003", "Daniel Tan",    "011-2223334", "25/12/2026", "18:00", 2},
+    };
+
+    for (Booking& booking : tests) {
+        booking.bookingId = nextBookingId++;
+        confirmed.push_back(booking);
+        confirmedSeats += booking.seats;
+        activeCustomers.insert(booking.customerId);
+    }
+
+}
+
 int main() {
     int choice;
-
+    pushTestBookings(); //call test data, comment this to not allow test data and be fresh
     do {
         cout << "\n===== REMBAYUNG RESTAURANT =====\n"
              << "1. Submit Booking Request\n"
@@ -270,20 +368,26 @@ int main() {
             case 1: submitBooking(); break;
             case 2: processNext();   break;
             case 3: {
-                string phone;
                 int bookingId;
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                cin >> bookingId;
-                cout << "Booking ID to search: " << bookingId << endl;
-                cout << "Phone: ";
-                getline(cin, phone);
-                int idx = search_booking(confirmed, phone, bookingId);
+                cout << "Booking ID to search: ";
+                if (!(cin >> bookingId)) {
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cout << "Invalid number.\n";
+                    break;
+                }
+                int idx = search_booking(confirmed, bookingId);
                 if (idx == -1) {
                     cout << "Booking not found.\n";
                 } else {
-                    const Booking& b = confirmed[idx];
-                    cout << "Found: booking #" << b.bookingId << ", " << b.name
-                         << " (" << b.customerId << "), " << b.seats << " seats.\n";
+                    const Booking& booking = confirmed[idx];
+                    cout << "Found booking #" << booking.bookingId << "\n"
+                         << "  Customer ID: " << booking.customerId << "\n"
+                         << "  Name: " << booking.name << "\n"
+                         << "  Phone: " << booking.phone << "\n"
+                         << "  Date: " << booking.date << "\n"
+                         << "  Time: " << booking.time << "\n"
+                         << "  Seats: " << booking.seats << "\n";
                 }
                 break;
             }
