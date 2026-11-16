@@ -180,11 +180,10 @@ bool is_duplicate(const vector<Booking>& bookings, const Booking& new_booking) {
     return false; // No duplicate booking found
 }
 
-int search_booking(const vector<Booking>& bookings, const string& phone, const string& date, const string& time) {
+int search_booking(const vector<Booking>& bookings, const string& phone, const int bookingId) {
     for (int i = 0; i < bookings.size(); i++){
         if (bookings[i].phone == phone &&
-            bookings[i].date == date &&
-            bookings[i].time == time) {
+            bookings[i].bookingId == bookingId) {
             return i;
         }
     }
@@ -271,15 +270,14 @@ int main() {
             case 1: submitBooking(); break;
             case 2: processNext();   break;
             case 3: {
-                string phone, date, time;
+                string phone;
+                int bookingId;
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cin >> bookingId;
+                cout << "Booking ID to search: " << bookingId << endl;
                 cout << "Phone: ";
                 getline(cin, phone);
-                cout << "Date (DD/MM/YYYY): ";
-                getline(cin, date);
-                cout << "Time (HH:MM): ";
-                getline(cin, time);
-                int idx = search_booking(confirmed, phone, date, time);
+                int idx = search_booking(confirmed, phone, bookingId);
                 if (idx == -1) {
                     cout << "Booking not found.\n";
                 } else {
