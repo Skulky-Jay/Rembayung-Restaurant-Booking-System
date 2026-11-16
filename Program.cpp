@@ -1,14 +1,22 @@
-// Rembayung Booking System - Steps 1-3
-// Submit Booking Request, Process Booking (FCFS), Prevent Redundant Booking
+// Rembayung Booking System - Steps 1-3 + Anti-Scalper
+// Submit Booking Request, Process Booking (FCFS), Prevent Redundant Booking,
+// Anti-Scalper check (esther.cpp)
 #include <iostream>
 #include <queue>
 #include <unordered_set>
 #include <vector>
 #include <string>
 #include <limits>
+#include <unordered_map>
+#include <deque>
+#include <chrono>
 using namespace std;
 
 const int MAX_SEATS = 200;
+
+// Anti-Scalper settings
+const int MAX_ATTEMPTS = 2;
+const int TIME_WINDOW_SECONDS = 120;
 
 struct Booking {
     int bookingId;       // unique per booking, auto-assigned
@@ -26,6 +34,68 @@ vector<Booking> confirmed;             // confirmed reservations
 int confirmedSeats = 0;                // running total, never > MAX_SEATS
 int nextBookingId = 1;                 // counter for booking IDs
 
+// Anti-Scalper: booking attempt timestamps per Customer ID (sliding window)
+unordered_map<string, deque<chrono::steady_clock::time_point>> attemptHistory;
+
+// Anti-Scalper function: returns true if the booking attempt may proceed
+bool antiScalperCheck(const string& customerId) {
+    auto currentTime = chrono::steady_clock::now();
+
+    // Get this customer's booking attempt history
+    auto& attempts = attemptHistory[customerId];
+
+    // Remove attempts older than the time window
+    while (!attempts.empty()) {
+        
+        auto elapsed = chrono::duration_cast<chrono::seconds>(
+            currentTime - attempts.front()
+        ).count();
+
+        if (elapsed > TIME_WINDOW_SECONDS) {
+
+            attempts.pop_front();
+            
+        } else {
+            break;
+        }
+    }
+
+    // Record the current booking attempt
+    attempts.push_back(currentTime);
+
+    cout << "\n--- Anti-Scalper Security Check ---\n";
+    cout << "Customer ID: " << customerId << endl;
+    cout << "Booking attempts in the last " << TIME_WINDOW_SECONDS << " seconds: " << attempts.size() << endl;
+
+    // Check whether the customer exceeds the attempt limit
+    if (attempts.size() > MAX_ATTEMPTS) {
+        cout << "\nWARNING: Suspicious booking activity detected!\n";
+        cout << "More than " << MAX_ATTEMPTS << " booking attempts within " << TIME_WINDOW_SECONDS << " seconds.\n";
+
+        char verification;
+
+        cout << "Manual verification required.\n";
+        cout << "Has the customer passed verification? (Y/N): ";
+        cin >> verification;
+
+        if (verification == 'Y' || verification == 'y') {
+
+            cout << "Verification successful. Booking may proceed.\n";
+            attempts.clear();   // reset history after successful verification
+
+            return true;
+        } else {
+
+            cout << "Verification failed. Booking request rejected.\n";
+            return false;
+
+        }
+    }
+
+    cout << "No suspicious activity detected.\n";
+    return true;
+}
+
 // Forward declarations (defined below)
 bool is_duplicate(const vector<Booking>& bookings, const Booking& new_booking);
 int search_booking(const vector<Booking>& bookings, const string& phone, const string& date, const string& time);
@@ -36,6 +106,8 @@ void submitBooking() {
     Booking booking;
     cout << "Customer ID: ";
     cin >> booking.customerId;
+    // Anti-Scalper check: every attempt counts, even ones rejected later
+    if (!antiScalperCheck(booking.customerId)) return;
     cout << "Customer name: ";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     getline(cin, booking.name);
