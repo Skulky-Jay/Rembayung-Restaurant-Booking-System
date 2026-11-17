@@ -182,8 +182,15 @@ void submitBooking() {
     Booking booking;
     cout << "Customer ID: ";
     cin >> booking.customerId;
-    // Anti-Scalper check: every attempt counts, even ones rejected later
-    if (!antiScalperCheck(booking.customerId)) return;
+
+    // Check whether the customer already has an active booking
+    if (activeCustomers.count(booking.customerId)) {
+        cout << "You already have an active booking!" << endl;
+        return;
+    }
+    if (!antiScalperCheck(booking.customerId)) {
+        return;
+    }
     cout << "Customer name: ";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     getline(cin, booking.name);
@@ -219,6 +226,7 @@ void submitBooking() {
     }
 
     booking.bookingId = nextBookingId++;                 // assigned only once accepted
+    activeCustomers.insert(booking.customerId);
     waitingQueue.push(booking);                          // goes to the back = FCFS
     cout << "Request received. Booking ID: " << booking.bookingId
          << ". Position in queue: " << waitingQueue.size() << "\n";
