@@ -48,7 +48,7 @@ bool antiScalperCheck(const string& customerId) {
             currentTime - attempts.front()
         ).count();
 
-        if (elapsed > TIME_WINDOW_SECONDS) {
+        if (elapsed >= TIME_WINDOW_SECONDS) {
 
             attempts.pop_front();
             
