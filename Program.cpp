@@ -48,7 +48,7 @@ bool antiScalperCheck(const string& customerId) {
             currentTime - attempts.front()
         ).count();
 
-        if (elapsed >= TIME_WINDOW_SECONDS) {
+        if (elapsed > TIME_WINDOW_SECONDS) {
 
             attempts.pop_front();
             
@@ -94,6 +94,7 @@ bool antiScalperCheck(const string& customerId) {
 }
 
 // Forward declarations
+bool isDuplicateInQueue(queue<Booking> temp, const Booking& newBooking);
 bool is_duplicate(const vector<Booking>& bookings, const Booking& new_booking);
 int search_booking(const vector<Booking>& bookings, int bookingId);
 bool cancel_booking(vector<Booking>& bookings, int booking_id);
