@@ -219,9 +219,9 @@ void submitBooking() {
         cout << "Rejected: seats must be 1-" << MAX_SEATS << ".\n";
         return;
     }
-    // Same phone/date/time as an existing confirmed booking
-    if (is_duplicate(confirmed, booking)) {
-        cout << "Rejected: a booking with this phone, date and time already exists.\n";
+    // Check duplicate booking in Confirmed and Waiting Queue
+    if (is_duplicate(confirmed, booking) || isDuplicateInQueue(waitingQueue, booking)) {
+        cout << "Rejected: duplicate booking detected!\n";
         return;
     }
 
@@ -265,6 +265,24 @@ bool is_duplicate(const vector<Booking>& bookings, const Booking& new_booking) {
         }
     }
     return false; // No duplicate booking found
+}
+
+// Check duplicate booking in Waiting Queue
+bool isDuplicateInQueue(queue<Booking> temp, const Booking& newBooking) {
+    while (!temp.empty())
+    {
+        Booking current = temp.front();
+        temp.pop();
+
+        if (current.phone == newBooking.phone &&
+            current.date == newBooking.date &&
+            current.time == newBooking.time)
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 int search_booking(const vector<Booking>& bookings, int bookingId) {
